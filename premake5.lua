@@ -26,7 +26,7 @@ workspace "Assembly-Testing"
     flags
     {
         "MultiProcessorCompile"
-      }
+    }
     
     filter "platforms:32-bit"
         architecture "x32" -- or x86
@@ -47,3 +47,4 @@ group "Dependencies"
 group ""
 
 include "testMain" -- includeexternal for upcoming workspace/solutions
+include "testAsmFunc"

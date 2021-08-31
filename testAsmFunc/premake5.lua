@@ -1,5 +1,5 @@
--- testMain
-project "testMain"
+-- test Assembly Func
+project "testAsmFunc"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++20"
@@ -7,7 +7,7 @@ project "testMain"
 
 	targetdir ("../builds/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("../builds/bin-int/" .. outputdir .. "/%{prj.name}")
-
+	
 	rules {"asm-prop"}
 
 	files
@@ -28,6 +28,7 @@ project "testMain"
 	{
 		-- [prj.name] Dependent upon
 	}
+
 
 	filter "system:windows"
 		systemversion "latest"
