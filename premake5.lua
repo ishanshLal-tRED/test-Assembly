@@ -48,3 +48,4 @@ group ""
 
 include "testMain" -- includeexternal for upcoming workspace/solutions
 include "testAsmFunc"
+include "ch02__03_4"
