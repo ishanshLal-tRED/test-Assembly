@@ -49,3 +49,7 @@ group ""
 include "testMain" -- includeexternal for upcoming workspace/solutions
 include "testAsmFunc"
 include "ch02__03_4"
+include "ch02__05_7"
+include "ch03__01_4"
+-- SKIPPED STRINGS
+include "ch03__08_9"
