@@ -1,13 +1,13 @@
--- testMain
-project "testMain"
-	kind "ConsoleApp"
+-- StatLib
+project "StatLib"
+	kind "StaticLib"
 	language "C++"
 	cppdialect "C++20"
 	staticruntime "on"
 
 	targetdir ("../builds/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("../builds/bin-int/" .. outputdir .. "/%{prj.name}")
-
+	
 	rules {"asm-prop"}
 
 	files
@@ -19,25 +19,13 @@ project "testMain"
     
 	includedirs
 	{
-        -- "../%{IncludeDir.??}",
         "./src",
         "../~vendor"
 	}
-
-	links
-	{
-		"StatLib"
-		-- [prj.name] Dependent upon
-	}
-
+	
 	filter "system:windows"
 		systemversion "latest"
-
-		defines
-		{
-			-- #defines
-		}
-
+		
 	filter "configurations:Debug"
 		defines {
             "_MODE_DEBUG",

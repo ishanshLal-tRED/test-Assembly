@@ -1,5 +1,5 @@
--- testMain
-project "testMain"
+-- ch05, Ex 01 - 04 Arrays
+project "ch05__01_4"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++20"
@@ -7,7 +7,7 @@ project "testMain"
 
 	targetdir ("../builds/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("../builds/bin-int/" .. outputdir .. "/%{prj.name}")
-
+	
 	rules {"asm-prop"}
 
 	files
@@ -19,25 +19,13 @@ project "testMain"
     
 	includedirs
 	{
-        -- "../%{IncludeDir.??}",
         "./src",
         "../~vendor"
 	}
-
-	links
-	{
-		"StatLib"
-		-- [prj.name] Dependent upon
-	}
-
+	
 	filter "system:windows"
 		systemversion "latest"
-
-		defines
-		{
-			-- #defines
-		}
-
+		
 	filter "configurations:Debug"
 		defines {
             "_MODE_DEBUG",

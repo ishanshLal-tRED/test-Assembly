@@ -72,7 +72,7 @@ CampareArrays_ PROC frame; (int32_t*, int32_t*, uint32_t, int32_t*) -> bool ; st
 	mov		r11, r9 ;
 	mov		dword ptr[r11], 0
 
-	repe	cmpsd ; repeat while equakls do cmp SRC strings of letter size dword inside [rsi] & [rdi] ; on every campare its gonna add 1
+	repe	cmpsd ; repeat while (equals or times number in rcx) do cmp SRC strings of letter size dword inside [rsi] & [rdi] ; on every campare its gonna add 1
 	
 	cmove	rax, One64 ; last cmp result, if equal mov 1
 	je		@F ; last cmp result, if equal we're done
