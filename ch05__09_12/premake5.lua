@@ -1,6 +1,6 @@
--- StatLib
-project "StatLib"
-	kind "StaticLib"
+-- ch05 Examples 09 to 12
+project "ch05__09_12"
+	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++20"
 	staticruntime "on"

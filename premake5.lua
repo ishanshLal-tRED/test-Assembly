@@ -46,7 +46,6 @@ group "Dependencies"
     --include "~vendor/glad-OpenGL_4.4" -- includeexternal for upcoming workspace/solutions so that it dosen't needs to recompile
 group ""
 
-include "StatLib" -- includeexternal for upcoming workspace/solutions
 include "testMain" -- includeexternal for upcoming workspace/solutions
 include "testAsmFunc"
 include "ch02__03_4"
@@ -57,3 +56,4 @@ include "ch03__08_9"
 -- Chapter 4 is theory based
 include "ch05__01_4"
 include "ch05__05_6"
+include "ch05__09_12"

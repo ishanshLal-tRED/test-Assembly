@@ -26,7 +26,6 @@ project "testMain"
 
 	links
 	{
-		"StatLib"
 		-- [prj.name] Dependent upon
 	}
 
