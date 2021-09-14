@@ -1,9 +1,19 @@
-
+	
+	include <MacrosX86-64-AVX.asmh>
 
 	.const
 TestVal db 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
 r8_pi	real8 3.14159265358979323846
 r8_3	real8 3.0
+
+r8_0_007184  real8 0.007184 
+r8_0_725	 real8 0.725	
+r8_0_425	 real8 0.425	
+r8_0_0235	 real8 0.0235	
+r8_0_42246	 real8 0.42246	
+r8_0_51456	 real8 0.51456	
+r8_3600		 real8 3600.0
+
 	.code
 ComputeSum_ proc frame ; (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) -> uint64_t
 
@@ -152,8 +162,8 @@ InvalidArg:
 
 ComputeSumPdt_ endp
 
-ComputeConesSAandVol proc frame ; (const double *, const double *, int32_t, double *, double *) -> bool
-								;        rcx     ,       rdx     ,    r8d ,    r9   ,[rsp+RSP_RA+40]->al
+ComputeConesSAandVol_ proc frame ; (const double *, const double *, int32_t, double *, double *) -> bool
+								 ;        rcx     ,       rdx     ,    r8d ,    r9   ,[rsp+RSP_RA+40]->al
 NUM_PUSHREG = 7
 STK_LOCAL1  = 16
 STK_LOCAL2  = 64
@@ -265,5 +275,91 @@ Done:
 	pop		rbx
 	pop		rbp
 	ret
-ComputeConesSAandVol endp
+ComputeConesSAandVol_ endp
+
+	extern	pow:proc
+
+HomoSapiansBodySurfaceArea_ proc frame ; (const double *, const double *, int32_t, double *, double *, double *)       ->  bool
+									   ;         rcx    ,       rdx     ,    r8d ,    r9 ,[rbp+FUNC_STK_ARGS],[rbp+FUNC_STK_ARGS+8]-> al
+	_CreateFrame HomoSapiansBodySurfaceArea_,16,64,rbx,rsi,r12,r13,r14,r15	  ; Ordered
+	_SaveXmmRegs xmm6,xmm7,xmm8,xmm9										  ; Ordered
+	_EndProlog
+
+; Save register's to home area, however they can be used to store any other data
+; without affecting registers
+	mov		qword ptr[rbp+HomoSapiansBodySurfaceArea_OffsetHomeRCX],rcx
+	mov		qword ptr[rbp+HomoSapiansBodySurfaceArea_OffsetHomeRDX],rdx
+	mov		qword ptr[rbp+HomoSapiansBodySurfaceArea_OffsetHomeR8 ],r8
+	mov		qword ptr[rbp+HomoSapiansBodySurfaceArea_OffsetHomeR9 ],r9
+
+; Initialize procssing loop pointers. Note that the home
+; maintained in non-volatile registers, which elimates reloads
+; after the calls to pow()
+	test	r8d,r8d
+	jg		@F
+
+	xor		eax,eax
+	jmp		Done
+
+@@:
+	mov		[rbp],r8d                     ; save n to local var
+	mov		r12,rcx                       ; r12 = ptr to ht
+	mov		r13,rdx                       ; r13 = ptr to wt
+	mov		r14,r9                        ; r14 = ptr to bsa1
+	mov		r15,[rbp+HomoSapiansBodySurfaceArea_OffsetStackArgs] ; r14 = ptr to bsa1
+	mov		rbx,[rbp+HomoSapiansBodySurfaceArea_OffsetStackArgs+8] ; r14 = ptr to bsa1
+	xor		rsi,rsi
+
+; Allocate home space on stack for use by pow()
+	sub		rsp,32
+
+; Calculate bsa1 = 0.00784 * pow(Ht, 0.725)*pow(wt,0.425);
+@@:
+	vmovsd	xmm0,real8 ptr[r12+rsi]         ; load
+	vmovsd	xmm8,xmm8,xmm0
+	vmovsd	xmm1,real8 ptr[r8_0_725]        ; load
+	call	pow                             ; pow(load, load)
+
+	vmovsd	xmm6,xmm6,xmm0                  ; store result
+
+	vmovsd	xmm0,real8 ptr[r13+rsi]         ; load
+	vmovsd	xmm9,xmm9,xmm0
+	vmovsd	xmm1,real8 ptr[r8_0_425]
+	call	pow
+	vmulsd	xmm6,xmm6,xmm0
+	vmulsd	xmm6,xmm6,real8 ptr [r8_0_007184]
+
+; Calculate bsa2 = 0.0235*pow(ht, 0.42246) * pow(wt, 0.51456);
+	vmovsd	xmm0,xmm0,xmm8
+	vmovsd	xmm1,real8 ptr[r8_0_42246]
+	call	pow
+	vmovsd	xmm7,xmm7,xmm0
+
+	vmovsd	xmm0,xmm0,xmm9
+	vmovsd	xmm1,real8 ptr[r8_0_51456]
+	call	pow
+	vmulsd	xmm7,xmm7,real8 ptr [r8_0_0235]
+	vmulsd	xmm7,xmm7,xmm0
+
+; Calculate bsa3 = sqrt(ht*wt/60.0);
+	vmulsd	xmm8,xmm8,xmm9
+	vdivsd	xmm8,xmm8,real8 ptr[r8_3600]
+	vsqrtsd	xmm8,xmm8,xmm8
+
+; Save BSA results
+	vmovsd	real8 ptr[r14+rsi],xmm6
+	vmovsd	real8 ptr[r15+rsi],xmm7
+	vmovsd	real8 ptr[rbx+rsi],xmm8
+
+	add		rsi,8
+	dec		dword ptr[rbp]
+	jnz		@B
+	
+	mov		eax,1
+
+Done:
+	_RestoreXmmRegs xmm6,xmm7,xmm8,xmm9	  ; Ordered
+	_DeleteFrame rbx,rsi,r12,r13,r14,r15  ; Ordered
+	ret
+HomoSapiansBodySurfaceArea_ endp
 	END
