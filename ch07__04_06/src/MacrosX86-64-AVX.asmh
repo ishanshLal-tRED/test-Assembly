@@ -145,7 +145,7 @@ _EndProlog  macro
 ;
 ; Description:  The following macro generates code that de-allocate a
 ;               stack frame previously created using _CreateFrame.
-;   
+;
 ; Macro Parameters: Rnv1 - Rnv7     Non-volatile registers to restore
 ;-------------------------------------------------------------------------
 
