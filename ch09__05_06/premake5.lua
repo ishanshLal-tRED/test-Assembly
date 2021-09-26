@@ -1,5 +1,5 @@
--- ch09 Examples 01 to 03
-project "ch09__01_03"
+-- ch09 Examples 05 to 06
+project "ch09__05_06"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++20"

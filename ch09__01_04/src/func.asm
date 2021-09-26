@@ -266,4 +266,144 @@ RETURN:
 	vzeroupper
 	ret
 AVXCalcColumnMeans_ endp
+
+AVXCalcCorrCoef_ proc frame ; (const double *x, const double *y, size_t n, double sum[5], double epsilon, double *rho) -> bool
+	
+	push	rbp
+	.pushreg rbp
+	sub		rsp,20h
+	.allocstack 20h
+	lea		rbp,[rsp+20h]
+	vmovdqa	xmmword ptr[rbp-20h],xmm6
+	.savexmm128 xmm6,0
+	vmovdqa	xmmword ptr[rbp-10h],xmm7 ; -20h + 10h
+	.savexmm128 xmm7,10h
+	.endprolog
+
+	or		r8,r8
+	jz		BAD_ARG
+	test	rcx,1fh
+	jnz		BAD_ARG
+	test	rdx,1fh
+	jnz		BAD_ARG
+
+	vxorpd	ymm3,ymm3,ymm3	; for packed sum_x
+	vxorpd	ymm4,ymm4,ymm4	; for packed sum_y
+	vxorpd	ymm5,ymm5,ymm5	; for packed sum_xx
+	vxorpd	ymm6,ymm6,ymm6	; for packed sum_yy
+	vxorpd	ymm7,ymm7,ymm7  ; for packed sum_xy
+	mov		r10,r8 ; save n
+
+	cmp		r8,4
+	jb		LP2
+LP1:
+	vmovapd	ymm0,ymmword ptr[rcx] ; x
+	vmovapd	ymm1,ymmword ptr[rdx] ; y
+
+	vaddpd	ymm3,ymm3,ymm0
+	vaddpd	ymm4,ymm4,ymm1
+
+	vmulpd	ymm2,ymm0,ymm0 ; x*x
+	vaddpd	ymm5,ymm5,ymm2
+	vmulpd	ymm2,ymm1,ymm1 ; y*y
+	vaddpd	ymm6,ymm6,ymm2
+	vmulpd	ymm2,ymm0,ymm1 ; x*y
+	vaddpd	ymm7,ymm7,ymm2
+
+	add		rcx,32
+	add		rdx,32
+	sub		r8,4
+	cmp		r8,4
+	jnb		LP1
+
+	test	r8,r8
+	jz		FinalEval
+LP2:
+	vmovsd	xmm0,real8 ptr[rcx] ; x
+	vmovsd	xmm1,real8 ptr[rdx] ; y
+
+	vaddpd	ymm3,ymm3,ymm0
+	vaddpd	ymm4,ymm4,ymm1
+
+	vmulpd	ymm2,ymm0,ymm0 ; x*x
+	vaddpd	ymm5,ymm5,ymm2
+	vmulpd	ymm2,ymm1,ymm1 ; y*y
+	vaddpd	ymm6,ymm6,ymm2
+	vmulpd	ymm2,ymm0,ymm1 ; x*y
+	vaddpd	ymm7,ymm7,ymm2
+
+	add		rcx,8
+	add		rdx,8
+	dec 	r8
+	jnz		LP2
+FinalEval:
+	vextractf128 xmm0,ymm3,1 ; xmm0 = ymm3[255:128]
+	vextractf128 xmm1,ymm4,1 ; xmm1 = ymm4[255:128]
+	vaddpd	xmm3,xmm0,xmm3
+	vaddpd	xmm4,xmm1,xmm4
+
+	vextractf128 xmm0,ymm5,1 ; xmm0 = ymm3[255:128]
+	vaddpd	xmm5,xmm0,xmm5
+
+	vextractf128 xmm0,ymm6,1 ; xmm0 = ymm3[255:128]
+	vextractf128 xmm1,ymm7,1 ; xmm1 = ymm4[255:128]
+	vaddpd	xmm6,xmm0,xmm6
+	vaddpd	xmm7,xmm1,xmm7
+
+	vhaddpd	xmm3,xmm3,xmm3
+	vhaddpd	xmm4,xmm4,xmm4
+	vhaddpd	xmm5,xmm5,xmm5
+	vhaddpd	xmm6,xmm6,xmm6
+	vhaddpd	xmm7,xmm7,xmm7
+
+	vmovsd	real8 ptr[r9],xmm3    ; sum_x 
+	vmovsd	real8 ptr[r9+8],xmm4  ; sum_y
+	vmovsd	real8 ptr[r9+16],xmm5 ; sum_xx
+	vmovsd	real8 ptr[r9+24],xmm6 ; sum_yy
+	vmovsd	real8 ptr[r9+32],xmm7 ; sum_xy
+
+; Calc rho = rho_num/rho_denom
+; rho_num = n * sum_xy - sum_x * sum_y
+	vcvtsi2sd xmm2,xmm2,r10
+	vmulsd	xmm0,xmm7,xmm2
+	vmulsd	xmm1,xmm3,xmm4
+	vsubsd	xmm7,xmm0,xmm1
+; rho_denom = t1 * t2
+; t1 = sqrt(n * sum_xx - sum_x * sum_x)
+; t2 = sqrt(n * sum_yy - sum_y * sum_y)
+	vmulsd	xmm3,xmm3,xmm3 ; sum_x * sum_x
+	vmulsd	xmm4,xmm4,xmm4 ; sum_y * sum_y
+	vmulsd	xmm5,xmm2,xmm5 ; n * sum_xx
+	vmulsd	xmm6,xmm2,xmm6 ; n * sum_yy
+	vsubsd	xmm0,xmm5,xmm3 ; 
+	vsubsd	xmm1,xmm6,xmm4
+
+	vsqrtsd	xmm0,xmm0,xmm0
+	vsqrtsd	xmm1,xmm1,xmm1
+
+	vmulpd	xmm3,xmm1,xmm0
+
+	xor		al,al
+	vcomisd	xmm3,real8 ptr[rbp+48]
+	setae	al
+	jl		BAD_DENOM
+
+	vdivpd	xmm5,xmm7,xmm3
+
+	mov		rdx,qword ptr[rbp+56]
+	vmovsd	real8 ptr[rdx],xmm5
+RETURN:
+	vmovdqa	xmm6,xmmword ptr[rbp-20h]
+	vmovdqa	xmm7,xmmword ptr[rbp-10h]
+	mov		rsp,rbp
+	pop		rbp
+	ret
+BAD_ARG:
+	xor		al,al
+	jmp		RETURN
+BAD_DENOM:
+	vpxor	xmm5,xmm5,xmm5
+	vmovsd	real8 ptr[rbp+56],xmm5
+	jmp		RETURN
+AVXCalcCorrCoef_ endp
 	END

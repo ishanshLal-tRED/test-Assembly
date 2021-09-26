@@ -23,17 +23,20 @@ public:
 		double		f64[CantainerWidth/8];
 	};
 	template<typename Typ> requires std::integral<Typ> || std::floating_point<Typ>
-	std::ostream& Print (char addatend = 0)
+	std::ostream& Print (char addatend = 0, size_t width = 0, size_t precision = 0)
 	{
 		constexpr size_t offset = sizeof (Typ);
-		constexpr size_t width =
-			offset > 7 ? 19 :
-			offset > 3 ? 12 :
-			offset > 1 ? 7 : 4
+		
+		if(width == 0)
+			width =
+				offset > 7 ? 19 :
+				offset > 3 ? 12 :
+				offset > 1 ? 7 : 4
 			;
-		constexpr size_t precision =
-			offset > 7 ? 10 :
-			offset > 3 ? 5  : 0
+		if(precision == 0)
+			precision =
+				offset > 7 ? 10 :
+				offset > 3 ? 5  : 0
 			;
 
 		std::cout << std::fixed << std::setprecision (precision);
@@ -43,6 +46,26 @@ public:
 
 		if (addatend)
 			std::cout << addatend;
+
+		return std::cout;
+	}
+	template<typename Typ> requires std::unsigned_integral<Typ>
+	std::ostream &PrintHex (char addatend = 0, size_t width = 0)
+	{
+		constexpr size_t offset = sizeof (Typ);
+
+		if (width == 0)
+			width = offset*2 + 2;
+		
+		std::cout << std::setfill ('0');;
+
+		for (size_t i = 0; i < CantainerWidth; i += offset)
+			std::cout << '0' << 'x' << std::setw (width) << std::hex << *((Typ *)(&u8[i])) << ' ';
+
+		if (addatend)
+			std::cout << addatend;
+		
+		std::cout << std::setfill (' ');
 
 		return std::cout;
 	}
