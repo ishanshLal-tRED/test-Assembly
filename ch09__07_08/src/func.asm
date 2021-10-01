@@ -1,5 +1,3 @@
-include <cmp_equ.asmh>
-	.const
 	.code
 AVXBlendF32_ proc ; (const Unified<cnt_wid>*src1, const Unified<cnt_wid>*src2, const Unified<cnt_wid>*dest, const Unified<cnt_wid>*idx)
 	

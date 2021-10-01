@@ -1,6 +1,3 @@
-include <cmp_equ.asmh>
-	.const
-
 	.code
 
 _MACRO4x4TransposeF64_ macro
