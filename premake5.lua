@@ -70,3 +70,8 @@ include "ch10__01_03"
 include "ch10__04_06"
 include "ch11__01_02"
 include "ch11__03_05"
+-- SKIPPED AVX512
+-- Chapter 16
+include "testCPUFeatures"
+include "ch16__02"
+include "ch16__03"
